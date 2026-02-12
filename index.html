@@ -7,12 +7,11 @@
 body {
     margin: 0;
     background: black;
-    text-align: center;
 }
 canvas {
-    background: #111;
     display: block;
     margin: auto;
+    background: #111;
 }
 </style>
 </head>
@@ -24,11 +23,12 @@ canvas {
 var canvas = document.getElementById("game");
 var ctx = canvas.getContext("2d");
 
+var ballRadius = 4;
 var ballX = 160;
-var ballY = 120;
+var ballY = 200;
 var ballDX = 2;
 var ballDY = -2;
-var ballRadius = 4;
+var ballLaunched = false;
 
 var paddleWidth = 50;
 var paddleHeight = 6;
@@ -86,7 +86,7 @@ function collisionDetection() {
         for(var r=0; r<brickRowCount; r++) {
             var b = bricks[c][r];
             if(b.status == 1) {
-                if(ballX > b.x && ballX < b.x+brickWidth && 
+                if(ballX > b.x && ballX < b.x+brickWidth &&
                    ballY > b.y && ballY < b.y+brickHeight) {
                     ballDY = -ballDY;
                     b.status = 0;
@@ -96,57 +96,81 @@ function collisionDetection() {
     }
 }
 
+function drawText() {
+    if(!ballLaunched) {
+        ctx.fillStyle = "white";
+        ctx.font = "10px Arial";
+        ctx.fillText("Press A to Start", 105, 150);
+    }
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     drawBricks();
     drawBall();
     drawPaddle();
-    collisionDetection();
+    drawText();
 
-    if(ballX + ballDX > canvas.width-ballRadius || ballX + ballDX < ballRadius) {
-        ballDX = -ballDX;
-    }
-    if(ballY + ballDY < ballRadius) {
-        ballDY = -ballDY;
-    } else if(ballY + ballDY > canvas.height-ballRadius) {
-        if(ballX > paddleX && ballX < paddleX + paddleWidth) {
-            ballDY = -ballDY;
-        } else {
-            alert("Game Over");
-            document.location.reload();
-        }
-    }
-
-    if(rightPressed && paddleX < canvas.width-paddleWidth) {
+    if(rightPressed && paddleX < canvas.width - paddleWidth) {
         paddleX += 4;
     }
     if(leftPressed && paddleX > 0) {
         paddleX -= 4;
     }
 
-    ballX += ballDX;
-    ballY += ballDY;
+    if(!ballLaunched) {
+        ballX = paddleX + paddleWidth / 2;
+        ballY = canvas.height - paddleHeight - 10;
+    } else {
+        collisionDetection();
+
+        if(ballX + ballDX > canvas.width-ballRadius || ballX + ballDX < ballRadius) {
+            ballDX = -ballDX;
+        }
+        if(ballY + ballDY < ballRadius) {
+            ballDY = -ballDY;
+        } else if(ballY + ballDY > canvas.height-ballRadius) {
+            if(ballX > paddleX && ballX < paddleX + paddleWidth) {
+                ballDY = -ballDY;
+            } else {
+                alert("Game Over");
+                document.location.reload();
+            }
+        }
+
+        ballX += ballDX;
+        ballY += ballDY;
+    }
 
     requestAnimationFrame(draw);
 }
 
+/* 3DS Controls */
 document.addEventListener("keydown", function(e) {
-    if(e.keyCode == 39) rightPressed = true;
-    if(e.keyCode == 37) leftPressed = true;
+
+    // D-Pad Right
+    if(e.keyCode == 39) {
+        rightPressed = true;
+        e.preventDefault();
+    }
+
+    // D-Pad Left
+    if(e.keyCode == 37) {
+        leftPressed = true;
+        e.preventDefault();
+    }
+
+    // A Button (Enter key)
+    if(e.keyCode == 13 && !ballLaunched) {
+        ballLaunched = true;
+    }
 });
 
 document.addEventListener("keyup", function(e) {
     if(e.keyCode == 39) rightPressed = false;
     if(e.keyCode == 37) leftPressed = false;
 });
-
-// Touch support for 3DS
-canvas.addEventListener("touchmove", function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var touchX = e.touches[0].clientX - rect.left;
-    paddleX = touchX - paddleWidth/2;
-    e.preventDefault();
-}, false);
 
 draw();
 </script>
