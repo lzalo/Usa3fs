@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>3DS Breakout</title>
+<style>
+body {
+    margin: 0;
+    background: black;
+    text-align: center;
+}
+canvas {
+    background: #111;
+    display: block;
+    margin: auto;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="320" height="240"></canvas>
+
+<script>
+var canvas = document.getElementById("game");
+var ctx = canvas.getContext("2d");
+
+var ballX = 160;
+var ballY = 120;
+var ballDX = 2;
+var ballDY = -2;
+var ballRadius = 4;
+
+var paddleWidth = 50;
+var paddleHeight = 6;
+var paddleX = 135;
+
+var rightPressed = false;
+var leftPressed = false;
+
+var brickRowCount = 4;
+var brickColumnCount = 6;
+var brickWidth = 45;
+var brickHeight = 10;
+var brickPadding = 5;
+var brickOffsetTop = 20;
+var brickOffsetLeft = 10;
+
+var bricks = [];
+for(var c=0; c<brickColumnCount; c++) {
+    bricks[c] = [];
+    for(var r=0; r<brickRowCount; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 };
+    }
+}
+
+function drawBall() {
+    ctx.beginPath();
+    ctx.arc(ballX, ballY, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawPaddle() {
+    ctx.fillStyle = "white";
+    ctx.fillRect(paddleX, canvas.height-paddleHeight-5, paddleWidth, paddleHeight);
+}
+
+function drawBricks() {
+    for(var c=0; c<brickColumnCount; c++) {
+        for(var r=0; r<brickRowCount; r++) {
+            if(bricks[c][r].status == 1) {
+                var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+                var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+                bricks[c][r].x = brickX;
+                bricks[c][r].y = brickY;
+                ctx.fillStyle = "lime";
+                ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+            }
+        }
+    }
+}
+
+function collisionDetection() {
+    for(var c=0; c<brickColumnCount; c++) {
+        for(var r=0; r<brickRowCount; r++) {
+            var b = bricks[c][r];
+            if(b.status == 1) {
+                if(ballX > b.x && ballX < b.x+brickWidth && 
+                   ballY > b.y && ballY < b.y+brickHeight) {
+                    ballDY = -ballDY;
+                    b.status = 0;
+                }
+            }
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBricks();
+    drawBall();
+    drawPaddle();
+    collisionDetection();
+
+    if(ballX + ballDX > canvas.width-ballRadius || ballX + ballDX < ballRadius) {
+        ballDX = -ballDX;
+    }
+    if(ballY + ballDY < ballRadius) {
+        ballDY = -ballDY;
+    } else if(ballY + ballDY > canvas.height-ballRadius) {
+        if(ballX > paddleX && ballX < paddleX + paddleWidth) {
+            ballDY = -ballDY;
+        } else {
+            alert("Game Over");
+            document.location.reload();
+        }
+    }
+
+    if(rightPressed && paddleX < canvas.width-paddleWidth) {
+        paddleX += 4;
+    }
+    if(leftPressed && paddleX > 0) {
+        paddleX -= 4;
+    }
+
+    ballX += ballDX;
+    ballY += ballDY;
+
+    requestAnimationFrame(draw);
+}
+
+document.addEventListener("keydown", function(e) {
+    if(e.keyCode == 39) rightPressed = true;
+    if(e.keyCode == 37) leftPressed = true;
+});
+
+document.addEventListener("keyup", function(e) {
+    if(e.keyCode == 39) rightPressed = false;
+    if(e.keyCode == 37) leftPressed = false;
+});
+
+// Touch support for 3DS
+canvas.addEventListener("touchmove", function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var touchX = e.touches[0].clientX - rect.left;
+    paddleX = touchX - paddleWidth/2;
+    e.preventDefault();
+}, false);
+
+draw();
+</script>
+
+</body>
+</html>
